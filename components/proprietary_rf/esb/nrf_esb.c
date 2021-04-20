@@ -45,9 +45,9 @@
 #include <string.h>
 #include <stddef.h>
 #include "sdk_common.h"
-#include "sdk_macros.h"
-#include "app_util.h"
-#include "nrf_delay.h"
+//#include "sdk_macros.h"
+//#include "app_util.h"
+//#include "nrf_delay.h"
 
 #define BIT_MASK_UINT_8(x) (0xFF >> (8 - (x)))
 

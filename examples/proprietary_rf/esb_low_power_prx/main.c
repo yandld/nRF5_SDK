@@ -47,6 +47,8 @@
 #include "nrf_esb_error_codes.h"
 #include "nrf_delay.h"
 #include "nrf_gpio.h"
+#include "app_uart.h"
+#include "nrf_uart.h"
 #include "nrf_error.h"
 #include "boards.h"
 
@@ -56,6 +58,12 @@
 
 #define LED_ON          0
 #define LED_OFF         1
+
+
+
+
+#define UART_TX_BUF_SIZE 256                         /**< UART TX buffer size. */
+#define UART_RX_BUF_SIZE 256                         /**< UART RX buffer size. */
 
 //#define NRF_ESB_LEGACY
 
@@ -68,55 +76,31 @@ uint8_t led_nr;
 
 void nrf_esb_event_handler(nrf_esb_evt_t const * p_event)
 {
+    int i;
     switch (p_event->evt_id)
     {
         case NRF_ESB_EVENT_TX_SUCCESS:
-            NRF_LOG_DEBUG("SUCCESS");
+            printf("tx ok\r\n");
             break;
         case NRF_ESB_EVENT_TX_FAILED:
-            NRF_LOG_DEBUG("FAILED");
+            printf("tx failed\r\n");
             (void) nrf_esb_flush_tx();
             break;
         case NRF_ESB_EVENT_RX_RECEIVED:
             while (nrf_esb_read_rx_payload(&rx_payload) == NRF_SUCCESS) ;
-            NRF_LOG_DEBUG("Receiving packet: %x", rx_payload.data[0]);
+            printf("rx packet: len:%d\r\n", rx_payload.length);
 
-            switch (rx_payload.data[0] & 0xFUL)
-            {
-                case 0x1:
-                    m_state[0] = !m_state[0];
-                    nrf_gpio_pin_write(LED_1, m_state[0]);
-                    break;
+//            for(i=0; i<rx_payload.length; i++)
+//            {
+//                printf("%02X ", rx_payload.data[i]);
+//            }
+//            printf("\r\n");
+            tx_payload.length = 64;
+            tx_payload.data[0] = rx_payload.data[0]+1;
 
-                case 0x2:
-                    m_state[1] = !m_state[1];
-                    nrf_gpio_pin_write(LED_2, m_state[1]);
-                    break;
+            nrf_esb_write_payload(&tx_payload);
 
-                case 0x4:
-                    m_state[2] = !m_state[2];
-                    nrf_gpio_pin_write(LED_3, m_state[2]);
-                    break;
-
-                case 0x8:
-                    m_state[3] = !m_state[3];
-                    nrf_gpio_pin_write(LED_4, m_state[3]);
-                    break;
-            }
-
-            nrf_gpio_pin_write(LED_1, m_state[0]);
-            nrf_gpio_pin_write(LED_2, m_state[1]);
-            nrf_gpio_pin_write(LED_3, m_state[2]);
-            nrf_gpio_pin_write(LED_4, m_state[3]);
-
-            tx_payload.length = 1;
-            tx_payload.data[0] = m_state[0] << 0
-                               | m_state[1] << 1
-                               | m_state[2] << 2
-                               | m_state[3] << 3;
-            (void) nrf_esb_write_payload(&tx_payload);
-
-            NRF_LOG_DEBUG("Queue transmitt packet: %02x", tx_payload.data[0]);
+          //  printf("queue tx: len:%d\r\n", tx_payload.length);
             break;
     }
 }
@@ -138,13 +122,9 @@ uint32_t esb_init( void )
     uint8_t base_addr_1[4] = {0xC2, 0xC2, 0xC2, 0xC2};
     uint8_t addr_prefix[8] = {0xE7, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8 };
 
-#ifndef NRF_ESB_LEGACY
     nrf_esb_config_t nrf_esb_config         = NRF_ESB_DEFAULT_CONFIG;
-#else // NRF_ESB_LEGACY
-    nrf_esb_config_t nrf_esb_config         = NRF_ESB_LEGACY_CONFIG;
-#endif // NRF_ESB_LEGACY
     nrf_esb_config.selective_auto_ack       = 0;
-    nrf_esb_config.payload_length           = 3;
+    nrf_esb_config.payload_length           = 200;
     nrf_esb_config.bitrate                  = NRF_ESB_BITRATE_2MBPS;
     nrf_esb_config.mode                     = NRF_ESB_MODE_PRX;
     nrf_esb_config.event_handler            = nrf_esb_event_handler;
@@ -203,9 +183,38 @@ void power_manage( void )
 }
 
 
+void uart_error_handle(app_uart_evt_t * p_event)
+{
+
+}
+
+
 int main(void)
 {
     uint32_t err_code;
+    
+ const app_uart_comm_params_t comm_params =
+      {
+          RX_PIN_NUMBER,
+          TX_PIN_NUMBER,
+          RTS_PIN_NUMBER,
+          CTS_PIN_NUMBER,
+          APP_UART_FLOW_CONTROL_DISABLED,
+          false,
+          NRF_UART_BAUDRATE_115200
+
+      };
+    
+    APP_UART_FIFO_INIT(&comm_params,
+                         UART_RX_BUF_SIZE,
+                         UART_TX_BUF_SIZE,
+                         uart_error_handle,
+                         APP_IRQ_PRIORITY_LOWEST,
+                         err_code);
+      
+      printf("esb RX example\r\n");
+    
+    
     err_code = logging_init();
     APP_ERROR_CHECK(err_code);
     gpio_init();
@@ -213,15 +222,11 @@ int main(void)
     APP_ERROR_CHECK(err_code);
     clocks_start();
 
-    NRF_LOG_DEBUG("Enhanced ShockBurst Receiver Example started.");
+    printf("Enhanced ShockBurst Receiver Example started.");
 
     err_code = nrf_esb_start_rx();
     APP_ERROR_CHECK(err_code);
 
-    tx_payload.data[0] = m_state[0] << 0
-                       | m_state[1] << 1
-                       | m_state[2] << 2
-                       | m_state[3] << 3;
     err_code = nrf_esb_write_payload(&tx_payload);
     APP_ERROR_CHECK(err_code);
 
@@ -229,7 +234,7 @@ int main(void)
     {
         if (NRF_LOG_PROCESS() == false)
         {
-            power_manage();
+//            power_manage();
         }
     }
 }

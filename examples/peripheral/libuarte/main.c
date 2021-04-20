@@ -125,8 +125,8 @@ int main(void)
 {
     bsp_board_init(BSP_INIT_LEDS);
     
-    ret_code_t ret = nrf_drv_clock_init();
-    APP_ERROR_CHECK(ret);
+//    ret_code_t ret = nrf_drv_clock_init();
+//    APP_ERROR_CHECK(ret);
   
     nrf_drv_clock_lfclk_request(NULL);
 

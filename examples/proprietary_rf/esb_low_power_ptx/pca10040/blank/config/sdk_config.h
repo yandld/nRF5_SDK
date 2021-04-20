@@ -277,6 +277,10 @@
  
 // <0=> Disabled 
 // <1=> Enabled 
+#define APP_UART_ENABLED 1
+#define APP_FIFO_ENABLED 1
+#define APP_UART_DRIVER_INSTANCE 0
+#define RETARGET_ENABLED  1
 
 #ifndef NRFX_UART_DEFAULT_CONFIG_HWFC
 #define NRFX_UART_DEFAULT_CONFIG_HWFC 0

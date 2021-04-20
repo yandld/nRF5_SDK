@@ -48,6 +48,19 @@
 #endif
 // <h> nRF_Drivers 
 
+
+
+
+
+
+
+
+
+#define APP_UART_ENABLED 1
+#define APP_FIFO_ENABLED 1
+#define APP_UART_DRIVER_INSTANCE 0
+#define RETARGET_ENABLED  1
+
 //==========================================================
 // <e> NRFX_PRS_ENABLED - nrfx_prs - Peripheral Resource Sharing module
 //==========================================================

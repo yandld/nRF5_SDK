@@ -1,6 +1,11 @@
 documentation
 external_tools
-
+JLink*
+_build
+RTE
+*.scvd
+*.YX
+settings
 # Prerequisites
 *.d
 
