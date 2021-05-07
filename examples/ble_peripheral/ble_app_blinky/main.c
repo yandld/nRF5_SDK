@@ -578,7 +578,7 @@ int main(void)
     conn_params_init();
 
     // Start execution.
-    NRF_LOG_INFO("Blinky example started.");
+    NRF_LOG_INFO("peripgeral Blinky example started.");
     advertising_start();
 
     // Enter main loop.
